@@ -1,0 +1,236 @@
+# hydraR (experimental)
+
+Modern data analysis projects need to store and retrieve many
+configuration settings, such as secret keys and tokens, paths, tuning
+parameters, database ports, and authentication values. The `hydraR`
+package for `R` provides an easy-to-use, powerful, and flexible workflow
+to manage configuration settings stored in YAML files.
+
+`hydraR` uses [`reticulate`](https://rstudio.github.io/reticulate/) to
+implement convenience wrappers around two very popular Python libraries.
+[OmegaConf](https://omegaconf.readthedocs.io/) is a hierarchical
+configuration system with interpolation and resolvers.
+[Hydra](https://hydra.cc/) is a composition framework built on OmegaConf
+for defaults-driven configuration and runtime overrides.
+
+This README only shows minimal examples for the core functionality of
+the package. More complex features are illustrated in separate
+vignettes:
+
+- [Override](articles/override.md)
+  - How to change config parameters on the fly.
+- [Placeholders](articles/placeholders.md)
+  - How to use interpolation, environment variables, dynamic, and
+    interdependent fields in config files.
+- [Composition](articles/composition.md)
+  - How to combine multiple config files with defaults and overrides.
+- [Command line](articles/commandline.md)
+  - How to run `R` scripts from the command line with multi-run to sweep
+    over grids of parameter values.
+
+## Install
+
+The `hydraR` package is only available from Github. You can install it
+using the `remotes` package:
+
+``` bash
+remotes::install_github("vincentarelbundock/hydraR")
+```
+
+## Public API
+
+There are only two user-facing functions in this package:
+
+``` r
+compose(config_path, config_name, overrides, resolve)
+main(fn, config_path, config_name, resolve, argv)
+```
+
+## Quick start
+
+To load configuration values in an `R` session, we use the
+[`compose()`](reference/compose.md) function. To load configuration
+values when calling an `R` script from the command line, we use the
+[`main()`](reference/main.md) function.
+
+### R session: `compose()`
+
+To illustrate the use of `hydraR` in an `R` session, we use this YAML
+config file:
+
+``` yaml
+author:
+  given: Vincent
+  family: Arel-Bundock
+numeric: 2
+```
+
+A copy of the `minimal.yml` config file is distributed with the `hydraR`
+package, and we can locate its path on the user’s system with
+[`system.file()`](https://rdrr.io/r/base/system.file.html).
+
+``` r
+library(hydraR)
+
+cfg <- compose(
+  config_name = "minimal",
+  config_path = system.file("examples", package = "hydraR")
+)
+```
+
+The `cfg` object is a named (nested) list:
+
+``` r
+str(cfg)
+```
+
+``` R
+List of 2
+ $ author :List of 2
+  ..$ given : chr "Vincent"
+  ..$ family: chr "Arel-Bundock"
+ $ numeric: int 2
+ - attr(*, "class")= chr [1:2] "HydraConfig" "list"
+```
+
+We can thus access individual elements with the usual `$` accessor.
+
+``` r
+cfg$author$given
+```
+
+``` R
+[1] "Vincent"
+```
+
+``` r
+cfg$numeric
+```
+
+``` R
+[1] 2
+```
+
+We can also print the full resolved config in YAML format:
+
+``` r
+print(cfg)
+```
+
+``` R
+author:
+  given: Vincent
+  family: Arel-Bundock
+numeric: 2
+```
+
+or save it to file:
+
+``` r
+print(cfg, filename = "~/Desktop/resolved_config.yaml")
+```
+
+### Command line: `main()`
+
+In practice, we often call `R` scripts from the shell and override one
+or more config values at runtime. For larger experiments, we may also
+run the same script over a grid of parameters with multi-run.
+
+This workflow is handled by [`main()`](reference/main.md).
+
+The `example.R` script is:
+
+``` r
+#!/usr/bin/env Rscript
+library(hydraR)
+
+square <- function(cfg) {
+  x <- cfg$numeric
+  out <- sprintf("Input=%s -> Square=%s", x, x^2)
+  print(out)
+}
+
+main(
+  square,
+  config_path = "/path/to/config/",
+  config_name = "minimal"
+)
+```
+
+Run once with default values:
+
+``` bash
+Rscript example.R
+
+[1] "Input=2 -> Square=4"
+```
+
+See [Command line
+vignette](https://vincentarelbundock.github.io/hydraR/articles/commandline.html)
+to learn how to change config values from the command line, and how to
+run sweeps over grids of parameter values using multi-run.
+
+## Alternatives
+
+In my view, the main benefits of `hydraR` are:
+
+1.  Flexible framework for interpolation of placeholders in config
+    files.
+2.  Ability to combine multiple config files based on goals or
+    environment (e.g., development/production, user name, environment
+    variables).
+3.  Bilingual: The same config works in Python and R.
+
+The main disadvantage of `hydraR` is that it calls Python under the
+hood, which adds significant dependencies. The `reticulate` package can
+manage these dependencies automatically (see the Installation section
+above), but this will still be a concern for some users and some
+projects.
+
+If `hydraR` is not a good fit for your project, you may want to consider
+one of these alternatives:
+
+- [settings](https://CRAN.R-project.org/package=settings) Software
+  options settings manager for R.
+- [config](https://CRAN.R-project.org/package=config) Manage
+  configuration values across multiple environments (e.g. development,
+  test, production).
+- [ini](https://CRAN.R-project.org/package=ini) Read and write `.ini`
+  configuration files from R. (CRAN description: “INI file parser and
+  generator — parse and write Windows-style `.ini` files.”)
+- [configr](https://CRAN.R-project.org/package=configr) Implements
+  parsers and writers for JSON, INI, YAML, and TOML configuration files.
+- [rappdirs](https://CRAN.R-project.org/package=rappdirs) Application
+  Directories: determine where to save data, caches, and logs
+  (user/system directories).
+- [dotenv](https://CRAN.R-project.org/package=dotenv) Load environment
+  variables from a `.env` file in the working directory into R
+  environment variables.
+
+## Development
+
+``` bash
+make document
+make install
+make test
+make check
+```
+
+# Package index
+
+## All functions
+
+- [`compose()`](compose.md) : Compose configuration from a config
+  directory
+- [`main()`](main.md) : Hydra-style script entrypoint
+- [`print(`*`<HydraConfig>`*`)`](print.HydraConfig.md) : Print method
+  for HydraConfig
+
+# Articles
+
+### All vignettes
+
+- [Command line](commandline.md):
+- [Interpolation and Composition](composition.md):
+- [Override](override.md):
+- [Placeholders](placeholders.md):

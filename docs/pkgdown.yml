@@ -1,0 +1,9 @@
+pandoc: 3.2.1
+pkgdown: 2.2.0
+pkgdown_sha: ~
+articles:
+  commandline: commandline.html
+  composition: composition.html
+  override: override.html
+  placeholders: placeholders.html
+last_built: 2026-02-18T19:11Z

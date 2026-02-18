@@ -1,0 +1,196 @@
+# Placeholders
+
+Config files often need placeholders that resolve at runtime:
+environment variables, references to other fields, or typed values
+decoded from text. In `hydraR`, this is done by resolving expressions
+like `${resolver:args}` when we call
+[`compose()`](../reference/compose.md) or
+[`main()`](../reference/main.md).
+
+`hydraR` currently supports:
+
+- `oc.env`: read an environment variable, with optional fallback.
+- `oc.select`: read another config path, with optional fallback.
+- `oc.decode`: parse scalar text into YAML-typed values.
+- `oc.create`: build list or map values from inline YAML text.
+- `oc.deprecated`: warn and redirect an old key to a new key.
+- `oc.dict.keys`: return the keys of a mapping.
+- `oc.dict.values`: return the values of a mapping.
+
+## Config directory and files
+
+In this vignette, we use one base config file for every example:
+
+``` yaml
+author:
+  given: Vincent
+  family: Arel-Bundock
+numeric: 2
+```
+
+A copy of this config file is distributed with the `hydraR` package. It
+is stored in a local directory that we can identify with
+[`system.file()`](https://rdrr.io/r/base/system.file.html).
+
+``` r
+system.file("examples", package = "hydraR")
+
+[1] "/path/to/R/library/hydraR/examples"
+```
+
+To avoid repeating the full config directory path and config name every
+time we call [`compose()`](../reference/compose.md), we set global
+options once at the start.
+
+``` r
+library(hydraR)
+options(
+  hydraR.compose.config_path = system.file("examples", package = "hydraR"),
+  hydraR.compose.config_name = "minimal"
+)
+```
+
+## `oc.env`
+
+Read an environment variable, optionally with a fallback.
+
+``` r
+Sys.unsetenv("HYDRAR_DEMO_USER")
+cfg <- compose(
+  overrides = c(
+    "+env_user=${oc.env:HYDRAR_DEMO_USER,guest}",
+    "+shell_path=${oc.env:SHELL,/bin/sh}"
+  )
+)
+print(cfg)
+#> author:
+#>   given: Vincent
+#>   family: Arel-Bundock
+#> numeric: 2
+#> env_user: guest
+#> shell_path: /bin/zsh
+```
+
+## `oc.select`
+
+Read a key if it exists, otherwise use an optional fallback.
+
+``` r
+cfg <- compose(
+  overrides = c(
+    "+selected_existing=${oc.select:author.given,Unknown}",
+    "+selected_missing=${oc.select:author.middle,Unknown}"
+  )
+)
+print(cfg)
+#> author:
+#>   given: Vincent
+#>   family: Arel-Bundock
+#> numeric: 2
+#> selected_existing: Vincent
+#> selected_missing: Unknown
+```
+
+## `oc.decode`
+
+Parse a scalar string as YAML.
+
+``` r
+cfg <- compose(
+  overrides = c(
+    "+decoded_int=${oc.decode:\"3307\"}",
+    "+decoded_list=${oc.decode:\"[n1,n2]\"}",
+    "+decoded_dict='${oc.decode:\"{a:1,b:2}\"}'",
+    "+decoded_null=${oc.decode:null}"
+  )
+)
+print(cfg)
+#> author:
+#>   given: Vincent
+#>   family: Arel-Bundock
+#> numeric: 2
+#> decoded_int: 3307
+#> decoded_list:
+#> - n1
+#> - n2
+#> decoded_dict:
+#>   a: 1
+#>   b: 2
+#> decoded_null: ~
+```
+
+## `oc.create`
+
+Create structured values from YAML-like input.
+
+``` r
+cfg <- compose(
+  overrides = c(
+    "+created_map='${oc.create:{alpha:1,beta:2}}'",
+    "+created_list=${oc.create:[1,2,3]}"
+  )
+)
+print(cfg)
+#> author:
+#>   given: Vincent
+#>   family: Arel-Bundock
+#> numeric: 2
+#> created_map:
+#>   alpha: 1
+#>   beta: 2
+#> created_list:
+#> - 1
+#> - 2
+#> - 3
+```
+
+## `oc.deprecated`
+
+Mark an old key as deprecated and redirect to a new key.
+
+``` r
+cfg <- compose(
+  overrides = c(
+    "+old_numeric=${oc.deprecated:numeric}",
+    "+old_numeric_custom='${oc.deprecated:numeric,\"$OLD_KEY -> $NEW_KEY\"}'"
+  )
+)
+print(cfg)
+#> author:
+#>   given: Vincent
+#>   family: Arel-Bundock
+#> numeric: 2
+#> old_numeric: 2
+#> old_numeric_custom: 2
+```
+
+## `oc.dict.keys` and `oc.dict.values`
+
+Read keys or values from a mapping.
+
+``` r
+cfg <- compose(
+  overrides = c(
+    "++models.tiny.lr=0.001",
+    "++models.base.lr=0.0005",
+    "+model_names=${oc.dict.keys:models}",
+    "+model_values=${oc.dict.values:models}"
+  )
+)
+print(cfg)
+#> author:
+#>   given: Vincent
+#>   family: Arel-Bundock
+#> numeric: 2
+#> models:
+#>   tiny:
+#>     lr: 0.001
+#>   base:
+#>     lr: 0.0005
+#> model_names:
+#> - tiny
+#> - base
+#> model_values:
+#> - lr: 0.001
+#> - lr: 0.0005
+```
