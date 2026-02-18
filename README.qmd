@@ -49,11 +49,19 @@ conf_dir <- system.file("testdata", "conf", package = "hydraR")
 
 cfg <- compose(
   config_path = conf_dir,
+  config_name = "switch"
+)
+cfg
+cfg$mode
+cfg$run$lr
+
+cfg <- compose(
+  config_path = conf_dir,
   config_name = "main",
   overrides = c("run.lr=0.01", "selected_plan=B")
 )
 
-print(cfg, max_depth = 4)
+cfg
 ```
 
 ## Alternative Configs

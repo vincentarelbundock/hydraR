@@ -264,7 +264,7 @@ hydra_make_tmp_conf_dir <- function() {
             "  node7: 10.0.0.9",
             "nodes: '${oc.dict.keys:workers}'",
             "ips: '${oc.dict.values:workers}'",
-            "rusty_port: '${oc.deprecated:server.port}'",
+            "rusty_port: '${oc.select:server.port}'",
             "made: '${oc.create:[10, 20]}'",
             "made_interp: '${oc.create:[10, ${server.port}]}'"
         )
