@@ -1,13 +1,21 @@
 Package: hydraR
 Type: Package
-Title: Configuration Management for R
+Title: Manage Configuration Files in YAML
 Version: 0.0.1
 Date: 2026-02-17
 Authors@R: person("Vincent", "Arel-Bundock", role = c("aut", "cre"),
         email = "vincent.arel-bundock@umontreal.ca")
-Description: Compose YAML configs with Python Hydra via reticulate
-    and print composed configs as readable trees.
+Description: Manage YAML configuration files in R to store, override, and
+    retrieve settings such as secret keys, file paths, tuning parameters, and
+    database ports. Change parameters on the fly; use placeholders for
+    environment variables, external data, or complex interdependencies; and
+    combine multiple config files with defaults. Includes command-line
+    workflows with optional multi-run sweeps over parameter grids. Supports
+    Hydra-style YAML files and resolvers.
 License: MIT + file LICENSE
+URL: https://github.com/vincentarelbundock/hydraR,
+    https://vincentarelbundock.github.io/hydraR/
+BugReports: https://github.com/vincentarelbundock/hydraR/issues
 Imports:
     reticulate,
     yaml

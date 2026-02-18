@@ -105,6 +105,27 @@ Note that there is one `db` group member (`mysql` by default) and a `_self_` tok
 
 The `_self_` token means "merge the current file here in the order." Because `_self_` is listed last in `combine.yml`, values in `combine.yml` override values from included files when they overlap. 
 
+There are two more `.yml` files in `examples/db/`: `mysql.yml` and
+`postgres.yml`. We can switch between them by changing the selected `db` option.
+
+Default `db/mysql.yml`:
+
+```{r, echo=FALSE, results='asis'}
+fn <- system.file("examples", "db", "mysql.yml", package = "hydraR")
+cat("```yaml\n")
+cat(paste(readLines(fn), collapse = "\n"))
+cat("\n```\n")
+```
+
+Alternative `db/postgres.yml`:
+
+```{r, echo=FALSE, results='asis'}
+fn <- system.file("examples", "db", "postgres.yml", package = "hydraR")
+cat("```yaml\n")
+cat(paste(readLines(fn), collapse = "\n"))
+cat("\n```\n")
+```
+
 ```{r}
 compose(config_name = "combine")
 
