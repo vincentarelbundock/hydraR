@@ -49,46 +49,47 @@ cfg <- compose(
 print(cfg, max_depth = 4)
 ```
 
-    <hydraRig> 15 top-level keys
-    |- db
-    |  |- host: "localhost"
-    |  |- port: 3306L
-    |  |- credentials
-    |  |  |- user: "root"
-    |  |  `- password: "root"
-    |  `- pool
-    |     `- size: 10L
-    |- run
-    |  `- lr: 0.01
-    |- service
-    |  `- retries: 3L
-    |- server
-    |  |- host: "localhost"
-    |  `- port: 80L
-    |- client
-    |  |- url: "http://localhost:80/"
-    |  |- server_port: 80L
-    |  `- description: "Client of http://localhost:80/"
-    |- paths
-    |  `- by_brackets: "localhost"
-    |- plans
-    |  |- A: "plan A"
-    |  `- B: "plan B"
-    |- selected_plan: "B"
-    |- plan: "plan B"
-    |- owner
-    |  |- height: 180L
-    |  `- weight: 75L
-    |- player
-    |  |- height: 180L
-    |  `- weight: 75L
-    |- tree
-    |  |- value: 9L
-    |  `- nested
-    |     `- from_parent: 9L
-    |- users: c("user1", "user2")
-    |- first_user: "user1"
-    `- second_user: "user2"
+    db:
+      host: localhost
+      port: 3306
+      credentials:
+        user: root
+        password: root
+      pool:
+        size: 10
+    run:
+      lr: 0.01
+    service:
+      retries: 3
+    server:
+      host: localhost
+      port: 80
+    client:
+      url: http://localhost:80/
+      server_port: 80
+      description: Client of http://localhost:80/
+    paths:
+      by_brackets: localhost
+    plans:
+      A: plan A
+      B: plan B
+    selected_plan: B
+    plan: plan B
+    owner:
+      height: 180
+      weight: 75
+    player:
+      height: 180
+      weight: 75
+    tree:
+      value: 9
+      nested:
+        from_parent: 9
+    users:
+    - user1
+    - user2
+    first_user: user1
+    second_user: user2
 
 ## Alternative Configs
 

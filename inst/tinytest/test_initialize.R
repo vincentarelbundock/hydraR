@@ -1,6 +1,7 @@
-helper_path <- system.file("tinytest", "helpers", "test_helpers.R", package = "hydraR")
+helper_path <- system.file("tinytest", "helpers.R", package = "hydraR")
 if (!nzchar(helper_path)) {
-    helper_path <- normalizePath(file.path("inst", "tinytest", "helpers", "test_helpers.R"), winslash = "/", mustWork = FALSE)
+    helper_path <- c(file.path("inst", "tinytest", "helpers.R"), "helpers.R")
+    helper_path <- helper_path[file.exists(helper_path)][1]
 }
 source(helper_path, local = TRUE)
 

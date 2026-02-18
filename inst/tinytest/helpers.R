@@ -1,3 +1,5 @@
+Sys.setenv(RETICULATE_PYTHON = "managed")
+
 hydra_test_paths <- function() {
     testdata_dir <- system.file("testdata", package = "hydraR")
     if (!nzchar(testdata_dir)) {

@@ -7,17 +7,16 @@
 \method{print}{hydraRig}(
   x,
   max_depth = getOption("hydraR.print.max_depth", getOption("hydraR.print.levels", 4L)),
-  values = getOption("hydraR.print.values", TRUE),
+  values = getOption("hydraR.print.values", FALSE),
   ...
 )
 }
 \arguments{
 \item{x}{A hydraRig object.}
 
-\item{max_depth}{Maximum tree depth to print.}
+\item{max_depth}{Unused, kept for backward compatibility.}
 
-\item{values}{Logical; print node values instead of lengths, including
-truncated node values when `max_depth` is reached.}
+\item{values}{Unused, kept for backward compatibility.}
 
 \item{...}{Additional arguments passed to print.}
 }
@@ -25,12 +24,6 @@ truncated node values when `max_depth` is reached.}
 Invisibly returns `x`.
 }
 \description{
-Prints the config as an ASCII key tree.
-}
-\details{
-The number of printed levels can be controlled with `max_depth`.
-Defaults come from `options(hydraR.print.max_depth = <n>)`
-(or `options(hydraR.print.levels = <n>)`) with default `4`.
-Value printing defaults come from
-`options(hydraR.print.values = <TRUE|FALSE>)` with default `FALSE`.
+Prints the config as YAML by writing it to a temporary file and reading it
+back before printing.
 }

@@ -5,12 +5,11 @@ Version: 1.1
 Date: 2026-02-17
 Authors@R: person("Vincent", "Arel-Bundock", role = c("aut", "cre"),
         email = "vincent.arel-bundock@umontreal.ca")
-Description: Compose YAML configs with Hydra-like defaults semantics,
-    apply ordered CLI overrides, and print composed configs as
-    readable trees.
+Description: Compose YAML configs with Python Hydra via reticulate
+    and print composed configs as readable trees.
 License: GPL (>= 2)
 Imports:
-    checkmate,
+    reticulate,
     yaml
 Suggests: 
     knitr,

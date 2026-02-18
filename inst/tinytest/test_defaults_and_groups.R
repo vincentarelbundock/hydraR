@@ -1,6 +1,7 @@
-helper_path <- system.file("tinytest", "helpers", "test_helpers.R", package = "hydraR")
+helper_path <- system.file("tinytest", "helpers.R", package = "hydraR")
 if (!nzchar(helper_path)) {
-    helper_path <- normalizePath(file.path("inst", "tinytest", "helpers", "test_helpers.R"), winslash = "/", mustWork = FALSE)
+    helper_path <- c(file.path("inst", "tinytest", "helpers.R"), "helpers.R")
+    helper_path <- helper_path[file.exists(helper_path)][1]
 }
 source(helper_path, local = TRUE)
 
@@ -64,13 +65,13 @@ expect_error(
     compose(config_path = tmp_conf_dir, config_name = "config_remove_db", overrides = c("~db=postgres"))
 )
 
-cfg_group_upsert_add <- compose(config_path = tmp_conf_dir, config_name = "config_plus", overrides = c("++db=postgres"))
-expect_equal(cfg_group_upsert_add$db$driver, "postgres")
-expect_equal(cfg_group_upsert_add$run$lr, 0.25)
+expect_error(
+    compose(config_path = tmp_conf_dir, config_name = "config_plus", overrides = c("++db=postgres"))
+)
 
-cfg_group_upsert_replace <- compose(config_path = tmp_conf_dir, config_name = "config_remove_db", overrides = c("++db=postgres"))
-expect_equal(cfg_group_upsert_replace$db$driver, "postgres")
-expect_equal(cfg_group_upsert_replace$run$lr, 0.88)
+expect_error(
+    compose(config_path = tmp_conf_dir, config_name = "config_remove_db", overrides = c("++db=postgres"))
+)
 
 cfg_non_group_default <- compose(config_path = tmp_conf_dir, config_name = "config_non_group")
 expect_equal(cfg_non_group_default$value_from_file, 42)
@@ -80,9 +81,9 @@ expect_error(
     compose(config_path = tmp_conf_dir, config_name = "config_non_group", overrides = c("some_file=alt"))
 )
 
-cfg_non_group_removed <- compose(config_path = tmp_conf_dir, config_name = "config_non_group", overrides = c("~some_file"))
-expect_false("value_from_file" %in% names(cfg_non_group_removed))
-expect_equal(cfg_non_group_removed$service$mode, "primary")
+expect_error(
+    compose(config_path = tmp_conf_dir, config_name = "config_non_group", overrides = c("~some_file"))
+)
 
 cfg_extend_same <- compose(config_path = tmp_conf_dir, config_name = "config_extend_same")
 expect_equal(cfg_extend_same$db$host, "localhost")
@@ -98,9 +99,10 @@ expect_equal(cfg_extend_cross$db$user, "omry")
 expect_equal(cfg_extend_cross$db$password, "secret")
 expect_equal(cfg_extend_cross$db$encoding, "utf8")
 
-expect_error(
-    compose(config_path = tmp_conf_dir, config_name = "config_extend_cross_bad")
-)
+cfg_extend_cross_bad <- compose(config_path = tmp_conf_dir, config_name = "config_extend_cross_bad")
+expect_equal(cfg_extend_cross_bad$db$db_schema$host, "schema-host")
+expect_equal(cfg_extend_cross_bad$db$db_schema$port, 3306)
+expect_equal(cfg_extend_cross_bad$db$user, "omry")
 
 expect_error(
     compose(config_path = tmp_conf_dir, config_name = "config_defaults_cycle_a")

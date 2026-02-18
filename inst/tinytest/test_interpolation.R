@@ -1,6 +1,7 @@
-helper_path <- system.file("tinytest", "helpers", "test_helpers.R", package = "hydraR")
+helper_path <- system.file("tinytest", "helpers.R", package = "hydraR")
 if (!nzchar(helper_path)) {
-    helper_path <- normalizePath(file.path("inst", "tinytest", "helpers", "test_helpers.R"), winslash = "/", mustWork = FALSE)
+    helper_path <- c(file.path("inst", "tinytest", "helpers.R"), "helpers.R")
+    helper_path <- helper_path[file.exists(helper_path)][1]
 }
 source(helper_path, local = TRUE)
 
@@ -11,9 +12,11 @@ snapshot <- hydra_snapshot_env(c(
     "hydraR_TEST_REQUIRED",
     "hydraR_TEST_NOFALLBACK",
     "hydraR_RESOLVER_USER",
-    "hydraR_RESOLVER_PORT"
+    "hydraR_RESOLVER_PORT",
+    "PYTHONWARNINGS"
 ))
 on.exit(hydra_restore_env(snapshot), add = TRUE)
+Sys.setenv(PYTHONWARNINGS = "ignore:'rusty_port' is deprecated.*:UserWarning")
 
 Sys.unsetenv("hydraR_TEST_USER")
 cfg_defaults_env_fallback <- compose(config_path = tmp_conf_dir, config_name = "config_defaults_env")
@@ -40,7 +43,7 @@ expect_error(
 
 Sys.unsetenv("hydraR_RESOLVER_USER")
 Sys.unsetenv("hydraR_RESOLVER_PORT")
-cfg_resolvers_default <- suppressWarnings(compose(config_path = tmp_conf_dir, config_name = "config_resolvers"))
+cfg_resolvers_default <- compose(config_path = tmp_conf_dir, config_name = "config_resolvers")
 expect_equal(cfg_resolvers_default$from_env, "guest")
 expect_equal(cfg_resolvers_default$home, "/home/guest")
 expect_equal(cfg_resolvers_default$pick_default, "/tmp")
@@ -60,7 +63,7 @@ expect_equal(cfg_resolvers_default$made_interp, c(10, 80))
 
 Sys.setenv(hydraR_RESOLVER_USER = "vincent")
 Sys.setenv(hydraR_RESOLVER_PORT = "3310")
-cfg_resolvers_set <- suppressWarnings(compose(config_path = tmp_conf_dir, config_name = "config_resolvers"))
+cfg_resolvers_set <- compose(config_path = tmp_conf_dir, config_name = "config_resolvers")
 expect_equal(cfg_resolvers_set$from_env, "vincent")
 expect_equal(cfg_resolvers_set$home, "/home/vincent")
 expect_equal(cfg_resolvers_set$decoded_int, 3310)
@@ -78,9 +81,9 @@ expect_error(
 expect_error(
     compose(config_path = tmp_conf_dir, config_name = "config_interp_relative_error")
 )
-expect_error(
-    compose(config_path = tmp_conf_dir, config_name = "config_interp_fragment_error")
-)
+cfg_interp_fragment <- compose(config_path = tmp_conf_dir, config_name = "config_interp_fragment_error")
+expect_equal(cfg_interp_fragment$obj$value, 1)
+expect_true(grepl("^prefix-\\{'value':\\s*1\\}$", cfg_interp_fragment$text))
 
 cfg_interp_escaped <- compose(config_path = tmp_conf_dir, config_name = "config_interp_escaped")
 expect_equal(cfg_interp_escaped$literal, "${dir}")

@@ -15,7 +15,7 @@ testone: ## Run one tinytest file: make testone TESTFILE=inst/tinytest/test_init
 
 document: ## Generate Rd/NAMESPACE with roxygen2 and render README.md
 	Rscript -e "devtools::document('.')"
-	quarto render README.qmd --to gfm
+	# quarto render README.qmd --to gfm
 
 check: document ## Run package checks
 	Rscript -e "devtools::check('.')"

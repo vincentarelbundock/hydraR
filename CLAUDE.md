@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 hydraR is an R package that ports Facebook/Meta's Hydra configuration composition framework to R. It enables hierarchical YAML config composition with defaults lists, CLI-style overrides, and OmegaConf-style interpolation resolvers.
 
-**API:** The public API is minimal: `initialize()` and `compose()`. Composed configs are returned as `hydraRig` S3 objects (which behave like lists but have enhanced printing).
+**API:** The public API is minimal: `initialize()` and `compose()`. Composed configs are returned as `HydraConfig` S3 objects (which behave like lists but have enhanced printing).
 
 ## Common Commands
 
@@ -27,7 +27,7 @@ The package follows a two-phase pattern: **initialize** (point at config root) �
 
 #### Core composition flow
 - **initialize.R** — Initialization API and state management. Exports `initialize()` and manages package-level state in the `.initialize_state` environment. Handles config path resolution and initialization assertions.
-- **compose.R** — Core composition engine and exported `compose()` function. Orchestrates: primary config loading → defaults resolution → group config merging → overrides application → interpolation resolution. Returns a `hydraRig` S3 object.
+- **compose.R** — Core composition engine and exported `compose()` function. Orchestrates: primary config loading → defaults resolution → group config merging → overrides application → interpolation resolution. Returns a `HydraConfig` S3 object.
 - **config_defaults.R** — Defaults list parsing and normalization. Handles `_self_` positioning, group→option entries, and config-path entries from the `defaults:` key in YAML configs.
 - **config_overrides.R** — CLI-style override parsing and application. Supports `key=value`, `+key=value`, and `~key` syntax with dot-path navigation, booleans, null, numbers, and inline YAML.
 - **config_merge.R** — Deep merge implementation for named lists (right overwrites left, recursively).
@@ -45,7 +45,7 @@ The package follows a two-phase pattern: **initialize** (point at config root) �
 
 #### Utilities and output
 - **config_utils.R** — Low-level configuration utilities: dot-path tokenization with quote support, nested list get/set operations (`.get_cfg_value`, `.set_cfg_value`), unquoted character search (`.first_unquoted_index`).
-- **print.R** — S3 print method for `hydraRig`. Renders configs as ASCII trees with configurable depth (controlled by `levels` argument or `options(hydraR.print.max_depth = n)`).
+- **print.R** — S3 print method for `HydraConfig`. Renders configs as ASCII trees with configurable depth (controlled by `levels` argument or `options(hydraR.print.max_depth = n)`).
 
 ### Conventions
 
