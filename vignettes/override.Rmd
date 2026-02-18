@@ -1,0 +1,154 @@
+---
+title: "Override"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Override}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+Overrides let you change config values at compose time without editing YAML files.
+This vignette uses one base config file and applies different override patterns.
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+options(hydraR.print.max_depth = 10L, hydraR.print.values = TRUE)
+```
+
+```{r setup, echo=FALSE}
+library(hydraR)
+
+override_demo_dir <- file.path(tempdir(), "hydraR-override-demo")
+dir.create(override_demo_dir, recursive = TRUE, showWarnings = FALSE)
+
+write_cfg <- function(rel_path, yaml_text, root = override_demo_dir) {
+  path <- file.path(root, rel_path)
+  dir.create(dirname(path), recursive = TRUE, showWarnings = FALSE)
+  stem <- sub("\\.(ya?ml)$", "", path)
+  unlink(c(paste0(stem, ".yml"), paste0(stem, ".yaml")), force = TRUE)
+  writeLines(yaml_text, path, useBytes = TRUE)
+  invisible(path)
+}
+```
+
+Directory structure:
+
+```text
+conf/
+`- basic.yaml
+```
+
+Config file: `basic.yaml`
+
+```yaml
+defaults:
+  - _self_
+run:
+  lr: 0.10
+  epochs: 5
+service:
+  retries: 3
+  enabled: true
+db:
+  host: localhost
+  port: 3306
+```
+
+```{r base-write, echo=FALSE}
+yml <- "
+defaults:
+  - _self_
+run:
+  lr: 0.10
+  epochs: 5
+service:
+  retries: 3
+  enabled: true
+db:
+  host: localhost
+  port: 3306
+"
+write_cfg("basic.yaml", yml)
+```
+
+## No Overrides
+
+R code:
+
+```{r}
+cfg <- compose(config_path = override_demo_dir, config_name = "basic")
+print(cfg)
+```
+
+## Replace Values With `key=value`
+
+R code:
+
+```{r}
+cfg <- compose(
+  config_path = override_demo_dir,
+  config_name = "basic",
+  overrides = c("run.lr=0.01", "db.port=5432")
+)
+print(cfg)
+```
+
+## Add New Values With `+key=value`
+
+R code:
+
+```{r}
+cfg <- compose(
+  config_path = override_demo_dir,
+  config_name = "basic",
+  overrides = c("+experiment.name=baseline", "+service.timeout=30")
+)
+print(cfg)
+```
+
+## Upsert Values With `++key=value`
+
+R code:
+
+```{r}
+cfg <- compose(
+  config_path = override_demo_dir,
+  config_name = "basic",
+  overrides = c("++service.retries=8", "++new.branch=7")
+)
+print(cfg)
+```
+
+## Remove Values With `~key`
+
+R code:
+
+```{r}
+cfg <- compose(
+  config_path = override_demo_dir,
+  config_name = "basic",
+  overrides = c("~service.enabled", "~db.host")
+)
+print(cfg)
+```
+
+## Combine Multiple Overrides
+
+R code:
+
+```{r}
+cfg <- compose(
+  config_path = override_demo_dir,
+  config_name = "basic",
+  overrides = c(
+    "run.lr=0.02",
+    "+experiment.seed=42",
+    "++service.retries=10",
+    "~db.host"
+  )
+)
+print(cfg)
+```

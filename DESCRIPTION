@@ -1,0 +1,21 @@
+Package: hydraR
+Type: Package
+Title: Hydra-Like Config Composition for R
+Version: 1.1
+Date: 2026-02-17
+Authors@R: person("Vincent", "Arel-Bundock", role = c("aut", "cre"),
+        email = "vincent.arel-bundock@umontreal.ca")
+Description: Compose YAML configs with Hydra-like defaults semantics,
+    apply ordered CLI overrides, and print composed configs as
+    readable trees.
+License: GPL (>= 2)
+Imports:
+    checkmate,
+    yaml
+Suggests: 
+    knitr,
+    rmarkdown,
+    tinytest
+Encoding: UTF-8
+RoxygenNote: 7.3.3
+VignetteBuilder: knitr

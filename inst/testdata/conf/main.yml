@@ -1,0 +1,41 @@
+defaults:
+  - _self_
+db:
+  host: localhost
+  port: 3306
+  credentials:
+    user: root
+    password: root
+  pool:
+    size: 10
+run:
+  lr: 0.1
+service:
+  retries: 3
+server:
+  host: localhost
+  port: 80
+client:
+  url: "http://${server.host}:${server.port}/"
+  server_port: ${server.port}
+  description: "Client of ${.url}"
+paths:
+  by_brackets: ${[server][host]}
+plans:
+  A: plan A
+  B: plan B
+selected_plan: A
+plan: ${plans[${selected_plan}]}
+owner:
+  height: 180
+  weight: 75
+player: ${owner}
+tree:
+  value: 9
+  nested:
+    from_parent: ${..value}
+users:
+  - user1
+  - user2
+first_user: ${users[0]}
+second_user: ${users[1]}
