@@ -15,5 +15,15 @@ expect_true(any(grepl("^  host: localhost$", print_lines)))
 expect_true(any(grepl("^run:$", print_lines)))
 expect_true(any(grepl("^  lr: 0\\.2$", print_lines)))
 
-print_lines_with_args <- capture.output(print(cfg, max_depth = 1L, values = TRUE))
-expect_equal(print_lines_with_args, print_lines)
+expect_error(print(cfg, max_depth = 1L))
+expect_error(print(cfg, values = TRUE))
+
+out_file <- tempfile("hydraR-print-", fileext = ".yaml")
+print_out <- capture.output(print(cfg, filename = out_file))
+expect_equal(length(print_out), 0L)
+expect_true(file.exists(out_file))
+written <- yaml::read_yaml(out_file)
+expect_equal(written$run$lr, 0.2)
+
+expect_error(print(cfg, filename = tempfile("hydraR-print-", fileext = ".txt")))
+expect_error(print(cfg, filename = file.path(tempdir(), "does-not-exist", "out.yaml")))

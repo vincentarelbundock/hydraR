@@ -9,7 +9,7 @@ basic_conf_dir <- hydra_test_paths()$basic_conf_dir
 
 # compose behavior -------------------------------------------------------------
 cfg <- compose(config_path = basic_conf_dir, config_name = "main", overrides = c("run.lr=0.2"))
-expect_true(inherits(cfg, "hydraRig"))
+expect_true(inherits(cfg, "HydraConfig"))
 expect_true(inherits(cfg, "list"))
 expect_equal(cfg$db$host, "localhost")
 expect_equal(cfg$db$port, 3306)
@@ -23,9 +23,10 @@ expect_equal(cfg$first_user, "user1")
 expect_equal(cfg$second_user, "user2")
 expect_equal(cfg$tree$nested$from_parent, 9)
 
-cfg_switch <- compose(config_path = basic_conf_dir, config_name = "switch")
-expect_equal(cfg_switch$mode, "switched")
-expect_equal(cfg_switch$run$lr, 0.05)
+cfg_minimal <- compose(config_path = basic_conf_dir, config_name = "minimal")
+expect_equal(cfg_minimal$author$given, "Vincent")
+expect_equal(cfg_minimal$author$family, "Arel-Bundock")
+expect_equal(cfg_minimal$numeric, 2)
 
 cfg_main_override <- compose(
     config_path = basic_conf_dir,
@@ -36,3 +37,14 @@ expect_equal(cfg_main_override$plan, "plan B")
 
 cfg_null_overrides <- compose(config_path = basic_conf_dir, config_name = "main", overrides = NULL)
 expect_equal(cfg_null_overrides$run$lr, 0.1)
+
+local({
+    old_opts <- options(
+        hydraR.compose.config_path = basic_conf_dir,
+        hydraR.compose.config_name = "minimal"
+    )
+    on.exit(options(old_opts), add = TRUE)
+
+    cfg_from_option <- compose()
+    expect_equal(cfg_from_option$author$given, "Vincent")
+})

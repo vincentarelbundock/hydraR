@@ -1,0 +1,8 @@
+driver: mysql
+host: mysql-host
+port: 3306
+credentials:
+  user: root
+  password: root
+pool:
+  size: 10

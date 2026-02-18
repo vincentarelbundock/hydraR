@@ -1,209 +1,156 @@
 ---
-title: "hydraR"
+title: "hydraR (experimental)"
 format: 
   gfm:
     wrap: none
 ---
 
-```{r}
-#| echo: false
-options(hydraR.print.max_depth = 10L, hydraR.print.values = TRUE)
-```
+Modern data analysis projects need to store and retrieve many configuration settings, such as secret keys and tokens, paths, tuning parameters, database ports, and authentication values.  The `hydraR` package for `R` provides an easy-to-use, powerful, and flexible workflow to manage configuration settings stored in YAML files. 
 
-Modern data analysis projects need to store and retrieve many configuration settings, such as secret keys and tokens, paths, tuning parameters, database ports, and authentication values.  The `hydraR` package for `R` provides a powerful and flexible composition workflow to manage such configuration settings. This package is written entirely in `R`, but is designed to be (mostly) API-compatible two very popular Python libraries: OmegaConf and Hydra.
+`hydraR` uses [`reticulate`](https://rstudio.github.io/reticulate/) to implement convenience wrappers around two very popular Python libraries. [OmegaConf](https://omegaconf.readthedocs.io/) is a hierarchical configuration system with interpolation and resolvers. [Hydra](https://hydra.cc/) is a composition framework built on OmegaConf for defaults-driven configuration and runtime overrides.
 
-OmegaConf is a hierarchical configuration system with interpolation and resolvers ([website](https://omegaconf.readthedocs.io/)).
-Hydra is a composition framework built on OmegaConf for defaults-driven configuration and runtime overrides ([website](https://hydra.cc/)).
-hydraR is implements a focused Hydra/OmegaConf-style composition workflow for YAML configs in `R`.
+This README only shows minimal examples for the core functionality of the package. More complex features are illustrated in separate vignettes:
 
-## Public API
-
-The user-facing API is intentionally minimal:
-
-```r
-compose(config_path, config_name, overrides = ...)
-```
+* [Override](articles/override.html) 
+    - How to change config parameters on the fly.
+* [Placeholders](articles/placeholders.html) 
+    - How to use interpolation, environment variables, dynamic, and interdependent fields in config files.
+* [Composition](articles/composition.html) 
+    - How to combine multiple config files with defaults and overrides.
+* [Command line](articles/commandline.html) 
+    - How to run `R` scripts from the command line with multi-run to sweep over grids of parameter values.
 
 ## Install
+
+The `hydraR` package is only available from Github. You can install it using the `remotes` package:
 
 ```bash
 remotes::install_github("vincentarelbundock/hydraR")
 ```
 
-## Quick Start
+## Public API
 
-Fixture layout used in these examples:
+There are only two user-facing functions in this package:
 
-```text
-inst/testdata/conf/
-  main.yml
-  switch.yml
+```r
+compose(config_path, config_name, overrides, resolve)
+main(fn, config_path, config_name, resolve, argv)
 ```
 
-Example:
+## Quick start
 
-```{r}
-pkgload::load_all()
+To load configuration values in an `R` session, we use the `compose()` function. To load configuration values when calling an `R` script from the command line, we use the `main()` function.
 
-conf_dir <- system.file("testdata", "conf", package = "hydraR")
+### R session: `compose()`
 
-cfg <- compose(
-  config_path = conf_dir,
-  config_name = "switch"
-)
-cfg
-cfg$mode
-cfg$run$lr
-
-cfg <- compose(
-  config_path = conf_dir,
-  config_name = "main",
-  overrides = c("run.lr=0.01", "selected_plan=B")
-)
-
-cfg
-```
-
-## Alternative Configs
-
-```{r}
-compose(config_path = conf_dir, config_name = "main")$run$lr
-compose(config_path = conf_dir, config_name = "switch")$run$lr
-```
-
-## Value Overrides
-
-Set or replace values with `key=value`:
-
-```{r}
-cfg <- compose(
-  config_path = conf_dir,
-  config_name = "main",
-  overrides = c("service.retries=7", "selected_plan=B")
-)
-cfg$service$retries
-cfg$plan
-```
-
-Use `+key=value` to add a key that must not already exist:
-
-```{r}
-cfg <- compose(config_path = conf_dir, config_name = "main", overrides = c("+new_key=abc"))
-cfg$new_key
-```
-
-Use `++key=value` to upsert (insert or replace):
-
-```{r}
-compose(config_path = conf_dir, config_name = "main", overrides = c("++new.branch=7"))$new$branch
-```
-
-Use `~key` (or `~key=expected_value`) to delete keys:
-
-```{r}
-cfg <- compose(config_path = conf_dir, config_name = "main", overrides = c("~service.retries"))
-is.null(cfg$service$retries)
-```
-
-`~` can also target nested paths (for example `~service.retries`).
-
-## Config Group Overrides
-
-Config-group selection overrides are supported when your config directory
-contains group folders (for example `db/mysql.yaml`, `db/postgres.yaml`)
-and defaults entries such as:
+To illustrate the use of `hydraR` in an `R` session, we use this YAML config file:
 
 ```yaml
-defaults:
-  - db: mysql
-  - _self_
+author:
+  given: Vincent
+  family: Arel-Bundock
+numeric: 2
 ```
 
-Then:
+A copy of the `minimal.yml` config file is distributed with the `hydraR` package, and we can locate its path on the user's system with `system.file()`.
 
-- `db=postgres` replaces the selected group option.
-- `+db=postgres` inserts a new group selection if absent.
-- `++db=postgres` upserts group selection.
-- `~db` removes the group defaults entry.
+```{r}
+library(hydraR)
 
-## Environment Variables
+cfg <- compose(
+  config_name = "minimal",
+  config_path = system.file("examples", package = "hydraR")
+)
+```
 
-Use `${oc.env:VAR_NAME,fallback}` to read from the process environment.
+The `cfg` object is a named (nested) list:
 
-Set variables before composing:
+```{r}
+str(cfg)
+```
+
+We can thus access individual elements with the usual `$` accessor.
+
+```{r}
+cfg$author$given
+
+cfg$numeric
+```
+
+We can also print the full resolved config in YAML format:
+
+```{r}
+print(cfg)
+```
+
+or save it to file:
+
+```r
+print(cfg, filename = "~/Desktop/resolved_config.yaml")
+```
+
+### Command line: `main()`
+
+In practice, we often call `R` scripts from the shell and override one or more
+config values at runtime. For larger experiments, we may also run the same
+script over a grid of parameters with multi-run.
+
+This workflow is handled by `main()`.
+
+The `example.R` script is:
+
+```r
+#!/usr/bin/env Rscript
+library(hydraR)
+
+square <- function(cfg) {
+  x <- cfg$numeric
+  out <- sprintf("Input=%s -> Square=%s", x, x^2)
+  print(out)
+}
+
+main(
+  square,
+  config_path = "/path/to/config/",
+  config_name = "minimal"
+)
+```
+
+Run once with default values:
 
 ```bash
-export APP_USER=alice
-export APP_PORT=3310
+Rscript example.R
+
+[1] "Input=2 -> Square=4"
 ```
 
-Example config values:
+See [Command line vignette](https://vincentarelbundock.github.io/hydraR/articles/commandline.html) to learn how to change config values from the command line, and how to run sweeps over grids of parameter values using multi-run. 
 
-```yaml
-db:
-  user: ${oc.env:APP_USER,guest}
-  password: ${oc.env:APP_PASSWORD,???}
-  port: ${oc.decode:${oc.env:APP_PORT,3306}}
-```
+## Alternatives
 
-- `guest` is used if `APP_USER` is unset.
-- `???` makes `APP_PASSWORD` required (compose errors if missing).
-- `oc.decode` turns `"3306"`/`"3310"` into numeric values.
+In my view, the main benefits of `hydraR` are:
 
-## Interpolation
+1. Flexible framework for interpolation of placeholders in config files.
+2. Ability to combine multiple config files based on goals or environment (e.g., development/production, user name, environment variables).
+3. Bilingual: The same config works in Python and R.
 
-`compose()` resolves `${...}` interpolations after composition and overrides.
+The main disadvantage of `hydraR` is that it calls Python under the hood, which adds significant dependencies. The `reticulate` package can manage these dependencies automatically (see the Installation section above), but this will still be a concern for some users and some projects.
 
-```{r}
-cfg_interp <- compose(
-  config_path = conf_dir,
-  config_name = "main",
-  overrides = c("selected_plan=B")
-)
+If `hydraR` is not a good fit for your project, you may want to consider one of these alternatives:
 
-cfg_interp$client$url
-cfg_interp$client$description
-cfg_interp$plan
-```
-
-## Extending Configs
-
-Defaults inside non-primary configs are supported, so a config can extend
-another config and override selected fields.
-
-Same-group extension example (`db/mysql_ext.yaml`):
-
-```yaml
-defaults:
-  - base_mysql_ext
-user: omry
-password: secret
-port: 3307
-encoding: utf8
-```
-
-Cross-group extension into the current package:
-
-```yaml
-defaults:
-  - /db_schema/base_mysql@_here_
-```
+* [settings](https://CRAN.R-project.org/package=settings) Software options settings manager for R.
+* [config](https://CRAN.R-project.org/package=config) Manage configuration values across multiple environments (e.g. development, test, production).
+* [ini](https://CRAN.R-project.org/package=ini) Read and write `.ini` configuration files from R. (CRAN description: “INI file parser and generator — parse and write Windows-style `.ini` files.”)
+* [configr](https://CRAN.R-project.org/package=configr) Implements parsers and writers for JSON, INI, YAML, and TOML configuration files. 
+* [rappdirs](https://CRAN.R-project.org/package=rappdirs) Application Directories: determine where to save data, caches, and logs (user/system directories). 
+* [dotenv](https://CRAN.R-project.org/package=dotenv) Load environment variables from a `.env` file in the working directory into R environment variables.
 
 ## Development
 
 ```bash
 make document
-make test
-```
-
-## Contributing
-
-See `AGENTS.md` for repository contribution guidelines.
-
-Before opening a PR, run:
-
-```bash
-make document
+make install
 make test
 make check
 ```
+

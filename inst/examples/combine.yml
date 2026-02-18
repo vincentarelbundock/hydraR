@@ -1,0 +1,7 @@
+defaults:
+  - minimal
+  - db: mysql
+  - _self_
+db:
+  pool:
+    size: 15

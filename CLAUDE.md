@@ -52,7 +52,7 @@ The package follows a two-phase pattern: **initialize** (point at config root) â
 - Internal functions use `.name` naming (dot prefix for internals).
 - Parameter validation uses the `checkmate` package.
 - Documentation is roxygen2-generated (`man/` files should not be edited by hand).
-- Tests live in `inst/tinytest/` split by functionality, with YAML fixtures in `inst/testdata/basic/conf/`.
+- Tests live in `inst/tinytest/` split by functionality, with YAML fixtures in `inst/examples/`.
 - Test fixtures include group structure: `db/mysql.yaml`, `db/postgres.yaml`, `config.yaml`, `config_alt.yaml`, `config_interp.yaml`.
 
 ### Dependencies

@@ -1,14 +1,14 @@
 Sys.setenv(RETICULATE_PYTHON = "managed")
 
 hydra_test_paths <- function() {
-    testdata_dir <- system.file("testdata", package = "hydraR")
-    if (!nzchar(testdata_dir)) {
-        testdata_dir <- normalizePath(file.path("inst", "testdata"), winslash = "/", mustWork = FALSE)
+    examples_dir <- system.file("examples", package = "hydraR")
+    if (!nzchar(examples_dir)) {
+        examples_dir <- normalizePath(file.path("inst", "examples"), winslash = "/", mustWork = FALSE)
     }
 
     list(
-        testdata_dir = testdata_dir,
-        basic_conf_dir = file.path(testdata_dir, "conf")
+        examples_dir = examples_dir,
+        basic_conf_dir = examples_dir
     )
 }
 

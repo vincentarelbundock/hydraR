@@ -7,147 +7,88 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-Overrides let you change config values at compose time without editing YAML files.
-This vignette uses one base config file and applies different override patterns.
-
-```{r, include = FALSE}
-knitr::opts_chunk$set(
-  collapse = TRUE,
-  comment = "#>"
-)
-options(hydraR.print.max_depth = 10L, hydraR.print.values = TRUE)
-```
-
-```{r setup, echo=FALSE}
-library(hydraR)
-
-override_demo_dir <- file.path(tempdir(), "hydraR-override-demo")
-dir.create(override_demo_dir, recursive = TRUE, showWarnings = FALSE)
-
-write_cfg <- function(rel_path, yaml_text, root = override_demo_dir) {
-  path <- file.path(root, rel_path)
-  dir.create(dirname(path), recursive = TRUE, showWarnings = FALSE)
-  stem <- sub("\\.(ya?ml)$", "", path)
-  unlink(c(paste0(stem, ".yml"), paste0(stem, ".yaml")), force = TRUE)
-  writeLines(yaml_text, path, useBytes = TRUE)
-  invisible(path)
-}
-```
-
-Directory structure:
-
-```text
-conf/
-`- basic.yaml
-```
-
-Config file: `basic.yaml`
+Overrides let you change config values on the fly at compose time without editing YAML files. In this vignette, we use one base config file for every example:
 
 ```yaml
-defaults:
-  - _self_
-run:
-  lr: 0.10
-  epochs: 5
-service:
-  retries: 3
-  enabled: true
-db:
-  host: localhost
-  port: 3306
+author:
+  given: Vincent
+  family: Arel-Bundock
+numeric: 2
 ```
 
-```{r base-write, echo=FALSE}
-yml <- "
-defaults:
-  - _self_
-run:
-  lr: 0.10
-  epochs: 5
-service:
-  retries: 3
-  enabled: true
-db:
-  host: localhost
-  port: 3306
-"
-write_cfg("basic.yaml", yml)
+A copy of this config file is distributed with the `hydraR` package. It is stored in a local directory that we can identify with `system.file()`.
+
+```r
+system.file("examples", package = "hydraR")
+
+[1] "/path/to/R/library/hydraR/examples"
+```
+
+To avoid repeating the full config directory path and config name every time we
+call `compose()`, we set global options once at the start.
+
+```{r setup}
+library(hydraR)
+options(
+  hydraR.compose.config_path = system.file("examples", package = "hydraR"),
+  hydraR.compose.config_name = "minimal"
+)
 ```
 
 ## No Overrides
 
-R code:
-
 ```{r}
-cfg <- compose(config_path = override_demo_dir, config_name = "basic")
+cfg <- compose()
 print(cfg)
 ```
 
-## Replace Values With `key=value`
-
-R code:
+## Replace: `key=value`
 
 ```{r}
 cfg <- compose(
-  config_path = override_demo_dir,
-  config_name = "basic",
-  overrides = c("run.lr=0.01", "db.port=5432")
+  overrides = c("numeric=3", "author.given=Alice")
 )
 print(cfg)
 ```
 
-## Add New Values With `+key=value`
-
-R code:
+## Add: `+key=value`
 
 ```{r}
 cfg <- compose(
-  config_path = override_demo_dir,
-  config_name = "basic",
-  overrides = c("+experiment.name=baseline", "+service.timeout=30")
+  overrides = c("+experiment.name=baseline", "+experiment.seed=42")
 )
 print(cfg)
 ```
 
-## Upsert Values With `++key=value`
+## Upsert: `++key=value`
 
-R code:
+Upsert means update a value if the key exists, or insert it if the key does not exist.
 
 ```{r}
 cfg <- compose(
-  config_path = override_demo_dir,
-  config_name = "basic",
-  overrides = c("++service.retries=8", "++new.branch=7")
+  overrides = c("++numeric=5", "++experiment.tag=trial")
 )
 print(cfg)
 ```
 
-## Remove Values With `~key`
-
-R code:
+## Remove: `~key`
 
 ```{r}
 cfg <- compose(
-  config_path = override_demo_dir,
-  config_name = "basic",
-  overrides = c("~service.enabled", "~db.host")
+  overrides = c("~author.family")
 )
 print(cfg)
 ```
 
 ## Combine Multiple Overrides
 
-R code:
-
 ```{r}
 cfg <- compose(
-  config_path = override_demo_dir,
-  config_name = "basic",
   overrides = c(
-    "run.lr=0.02",
-    "+experiment.seed=42",
-    "++service.retries=10",
-    "~db.host"
+    "numeric=4",
+    "+experiment.name=stress",
+    "++author.middle=A.",
+    "~author.family"
   )
 )
 print(cfg)

@@ -5,15 +5,16 @@
 #' @param config_name Primary config filename without extension.
 #' @param overrides Character vector of CLI-style overrides for Python Hydra.
 #' @param resolve Logical; resolve OmegaConf interpolations before conversion.
-#' @return A composed `HydraConfig` object.
+#' @return A nested named list of config values with the `HydraConfig` class.
 #' @examples
-#' cfg <- compose(config_path = "conf", config_name = "config", overrides = c("db=mysql"))
+#' cp <- system.file("examples", package = "hydraR")
+#' cfg <- compose(config_path = cp, config_name = "minimal")
 #' @export
 compose <- function(
-    config_path = "conf",
-    config_name = "config",
-    overrides = character(),
-    resolve = TRUE
+  config_path = getOption("hydraR.compose.config_path", "conf"),
+  config_name = getOption("hydraR.compose.config_name", "config"),
+  overrides = character(),
+  resolve = TRUE
 ) {
     .validate_compose_inputs(
         config_path = config_path,
@@ -32,11 +33,13 @@ compose <- function(
         config_path = path,
         config_name = config_name
     )
-    on.exit({
-        if (!is.null(prepared_config$tmp_dir) && dir.exists(prepared_config$tmp_dir)) {
-            unlink(prepared_config$tmp_dir, recursive = TRUE, force = TRUE)
-        }
-    }, add = TRUE)
+    on.exit(
+        {
+            if (!is.null(prepared_config$tmp_dir) && dir.exists(prepared_config$tmp_dir)) {
+                unlink(prepared_config$tmp_dir, recursive = TRUE, force = TRUE)
+            }
+        },
+        add = TRUE)
 
     cfg <- .compose_with_hydra(
         prepared_config = prepared_config,
@@ -44,7 +47,7 @@ compose <- function(
         resolve = resolve
     )
 
-    structure(cfg, class = c("hydraRig", "list"))
+    structure(cfg, class = c("HydraConfig", "list"))
 }
 
 # Resolve config path.
@@ -113,36 +116,38 @@ compose <- function(
         return(invisible(NULL))
     }
 
-    initialized <- tryCatch({
-        reticulate::py_run_string(paste(
-            "from hydra import compose, initialize_config_dir",
-            "from omegaconf import OmegaConf",
-            "import os",
-            "",
-            "def _hydrar_sync_env(env_vars):",
-            "    for key in list(os.environ.keys()):",
-            "        if key.startswith('hydraR_'):",
-            "            os.environ.pop(key, None)",
-            "    for key, value in env_vars.items():",
-            "        os.environ[str(key)] = str(value)",
-            "",
-            "def _hydrar_compose(config_dir, config_name, overrides, resolve=True):",
-            "    if isinstance(overrides, str):",
-            "        overrides_list = [overrides]",
-            "    elif overrides is None:",
-            "        overrides_list = []",
-            "    else:",
-            "        overrides_list = list(overrides)",
-            "    with initialize_config_dir(config_dir=config_dir, version_base=None):",
-            "        cfg = compose(",
-            "            config_name=config_name,",
-            "            overrides=overrides_list,",
-            "        )",
-            "    return OmegaConf.to_container(cfg, resolve=resolve)",
-            sep = "\n"
-        ))
-        TRUE
-    }, error = identity)
+    initialized <- tryCatch(
+        {
+            reticulate::py_run_string(paste(
+                "from hydra import compose, initialize_config_dir",
+                "from omegaconf import OmegaConf",
+                "import os",
+                "",
+                "def _hydrar_sync_env(env_vars):",
+                "    for key in list(os.environ.keys()):",
+                "        if key.startswith('hydraR_'):",
+                "            os.environ.pop(key, None)",
+                "    for key, value in env_vars.items():",
+                "        os.environ[str(key)] = str(value)",
+                "",
+                "def _hydrar_compose(config_dir, config_name, overrides, resolve=True):",
+                "    if isinstance(overrides, str):",
+                "        overrides_list = [overrides]",
+                "    elif overrides is None:",
+                "        overrides_list = []",
+                "    else:",
+                "        overrides_list = list(overrides)",
+                "    with initialize_config_dir(config_dir=config_dir, version_base=None):",
+                "        cfg = compose(",
+                "            config_name=config_name,",
+                "            overrides=overrides_list,",
+                "        )",
+                "    return OmegaConf.to_container(cfg, resolve=resolve)",
+                sep = "\n"
+            ))
+            TRUE
+        },
+        error = identity)
 
     if (inherits(initialized, "error")) {
         msg <- conditionMessage(initialized)

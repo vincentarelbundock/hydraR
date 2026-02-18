@@ -5,8 +5,8 @@
 \title{Compose configuration from a config directory}
 \usage{
 compose(
-  config_path = "conf",
-  config_name = "config",
+  config_path = getOption("hydraR.compose.config_path", "conf"),
+  config_name = getOption("hydraR.compose.config_name", "config"),
   overrides = character(),
   resolve = TRUE
 )
@@ -21,11 +21,12 @@ compose(
 \item{resolve}{Logical; resolve OmegaConf interpolations before conversion.}
 }
 \value{
-A composed \code{HydraConfig} object.
+A nested named list of config values with the \code{HydraConfig} class.
 }
 \description{
 Compose configuration from a config directory
 }
 \examples{
-cfg <- compose(config_path = "conf", config_name = "config", overrides = c("db=mysql"))
+cp <- system.file("examples", package = "hydraR")
+cfg <- compose(config_path = cp, config_name = "minimal")
 }

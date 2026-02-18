@@ -1,255 +1,115 @@
 ---
-title: "Composition"
+title: "Interpolation and Composition"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Composition}
+  %\VignetteIndexEntry{Interpolation and Composition}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
-
-Composition builds one final config from multiple YAML files.
-In `hydraR`, this is controlled by `compose(config_path, config_name)`, `defaults`, and `_self_`.
 
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>"
 )
-options(hydraR.print.max_depth = 10L, hydraR.print.values = TRUE)
 ```
 
-```{r setup, echo=FALSE}
+Composition builds one final config from multiple YAML files. In `hydraR`, this is controlled by `compose(config_name = ...)`, `defaults`, and `_self_`.
+
+## Directory and files
+
+To illustrate how to use these features, we will use YAML files distributed
+alongside the `hydraR` package: `minimal.yml`, `main.yml`, `combine.yml`,
+`db/mysql.yml`, and `db/postgres.yml`. These files are stored in the
+`examples/` directory of the package. We can find this directory on the file
+system using:
+
+```r
+system.file("examples", package = "hydraR")
+
+[1] "/path/to/R/library/hydraR/examples"
+```
+
+To avoid specifying the config directory path and config name every time we call
+`compose()`, we set global options:
+
+```{r setup}
 library(hydraR)
 
-composition_demo_dir <- file.path(tempdir(), "hydraR-composition-demo")
-dir.create(composition_demo_dir, recursive = TRUE, showWarnings = FALSE)
-
-write_cfg <- function(rel_path, yaml_text, root = composition_demo_dir) {
-  path <- file.path(root, rel_path)
-  dir.create(dirname(path), recursive = TRUE, showWarnings = FALSE)
-  stem <- sub("\\.(ya?ml)$", "", path)
-  unlink(c(paste0(stem, ".yml"), paste0(stem, ".yaml")), force = TRUE)
-  writeLines(yaml_text, path, useBytes = TRUE)
-  invisible(path)
-}
+options(
+  hydraR.compose.config_path = system.file("examples", package = "hydraR"),
+  hydraR.compose.config_name = "main"
+)
 ```
 
-## Switch Between Two Root Configs
+The first config file we will use is: `minimal.yml`
+
+```{r show-minimal-yaml, echo=FALSE, results='asis'}
+cat("```yaml\n")
+cat(paste(readLines(file.path(getOption("hydraR.compose.config_path"), "minimal.yml")), collapse = "\n"))
+cat("\n```\n")
+```
+
+The second config file is: `main.yml`
+
+```{r show-main-yaml, echo=FALSE, results='asis'}
+cat("```yaml\n")
+cat(paste(readLines(file.path(getOption("hydraR.compose.config_path"), "main.yml")), collapse = "\n"))
+cat("\n```\n")
+```
+
+## Interpolation
+
+As you can see above, `main.yml` uses many placeholders and nested values. These placeholders are interpolated and resolved when calling `compose()` or `main()`. 
+
+```{r}
+cfg <- compose()
+```
+
+For example, the `url` field is defined as `"http://${server.host}:${server.port}/"`. The placeholders are resolved at compose time by extracting the relevant information from other fields in the YAML file, and return:
+
+```{r}
+cfg$client$url
+```
+
+We can also use complex, nested, indexing as in the `plan` field: `${plans[${selected_plan}]}`
+
+```{r}
+cfg$plan
+```
+
+## Switch root config
 
 Switch complete entrypoints by changing `config_name`.
 
-Directory structure:
+```{r}
+cfg <- compose(config_name = "minimal")
+print(cfg)
 
-```text
-conf/
-|- main.yml
-`- switch.yml
+cfg <- compose()
+print(cfg)
 ```
 
-Config file: `main.yml`
+## Combining config files
 
-```yaml
-defaults:
-  - _self_
-run:
-  lr: 0.10
-model: base
+To illustrate how to combine multiple config files, we use the `combine.yml` config distributed with `hydraR`:
+
+```{r, echo=FALSE, results='asis'}
+fn <- system.file("examples", "combine.yml", package = "hydraR")
+cat("```yaml\n")
+cat(paste(readLines(fn), collapse = "\n"))
+cat("\n```\n")
 ```
 
-Config file: `switch.yml`
+Note that there is one `db` group member (`mysql` by default) and a `_self_` token.
 
-```yaml
-defaults:
-  - _self_
-run:
-  lr: 0.01
-model: tiny
-```
-
-```{r switch-write, echo=FALSE}
-yml <- "
-defaults:
-  - _self_
-run:
-  lr: 0.10
-model: base
-"
-write_cfg("main.yml", yml)
-
-yml <- "
-defaults:
-  - _self_
-run:
-  lr: 0.01
-model: tiny
-"
-write_cfg("switch.yml", yml)
-```
-
-R code:
+The `_self_` token means "merge the current file here in the order." Because `_self_` is listed last in `combine.yml`, values in `combine.yml` override values from included files when they overlap. 
 
 ```{r}
-cfg <- compose(config_path = composition_demo_dir, config_name = "main")
-print(cfg)
+compose(config_name = "combine")
 
-cfg <- compose(config_path = composition_demo_dir, config_name = "switch")
-print(cfg)
-```
-
-## Compose Multiple Files With `defaults` and `_self_`
-
-`defaults` loads extra files and `_self_` controls merge order.
-With `_self_` last, the current file overrides previously loaded values.
-
-Directory structure:
-
-```text
-conf/
-|- common.yml
-|- main.yml
-`- db/
-   `- mysql.yml
-```
-
-Config file: `common.yml`
-
-```yaml
-app:
-  name: demo
-service:
-  timeout: 20
-```
-
-Config file: `db/mysql.yml`
-
-```yaml
-host: localhost
-port: 3306
-```
-
-Config file: `main.yml`
-
-```yaml
-defaults:
-  - common
-  - db: mysql
-  - _self_
-service:
-  timeout: 60
-```
-
-```{r defaults-write, echo=FALSE}
-yml <- "
-app:
-  name: demo
-service:
-  timeout: 20
-"
-write_cfg("common.yml", yml)
-
-yml <- "
-host: localhost
-port: 3306
-"
-write_cfg("db/mysql.yml", yml)
-
-yml <- "
-defaults:
-  - common
-  - db: mysql
-  - _self_
-service:
-  timeout: 60
-"
-write_cfg("main.yml", yml)
-```
-
-R code:
-
-```{r}
-cfg <- compose(config_path = composition_demo_dir, config_name = "main")
-print(cfg)
-```
-
-## Select User-Specific Files With `$NAME`
-
-Keep one stable `main.yml` and select `users/vincent.yml` or `users/etienne.yml` via `${oc.env:NAME,...}`.
-
-Directory structure:
-
-```text
-conf/
-|- main.yml
-`- users/
-   |- vincent.yml
-   `- etienne.yml
-```
-
-Config file: `users/vincent.yml`
-
-```yaml
-user:
-  login: vincent
-  first_name: Vincent
-  last_name: Martin
-```
-
-Config file: `users/etienne.yml`
-
-```yaml
-user:
-  login: etienne
-  first_name: Etienne
-  last_name: Bernard
-```
-
-Config file: `main.yml`
-
-```yaml
-defaults:
-  - users/${oc.env:NAME,vincent}
-  - _self_
-paths:
-  data_dir: '/home/${user.login}/data'
-display_name: '${user.first_name} ${user.last_name}'
-```
-
-```{r user-write, echo=FALSE}
-yml <- "
-user:
-  login: vincent
-  first_name: Vincent
-  last_name: Martin
-"
-write_cfg("users/vincent.yml", yml)
-
-yml <- "
-user:
-  login: etienne
-  first_name: Etienne
-  last_name: Bernard
-"
-write_cfg("users/etienne.yml", yml)
-
-yml <- "
-defaults:
-  - users/${oc.env:NAME,vincent}
-  - _self_
-paths:
-  data_dir: '/home/${user.login}/data'
-display_name: '${user.first_name} ${user.last_name}'
-"
-write_cfg("main.yml", yml)
-```
-
-R code:
-
-```{r}
-Sys.setenv(NAME = "vincent")
-cfg <- compose(config_path = composition_demo_dir, config_name = "main")
-print(cfg)
-
-Sys.setenv(NAME = "etienne")
-cfg <- compose(config_path = composition_demo_dir, config_name = "main")
-print(cfg)
+compose(
+  config_name = "combine",
+  overrides = c("db=postgres")
+)
 ```

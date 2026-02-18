@@ -1,0 +1,8 @@
+driver: postgres
+host: postgres-host
+port: 5432
+credentials:
+  user: pg
+  password: pgpass
+pool:
+  size: 20

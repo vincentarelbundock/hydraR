@@ -3,7 +3,7 @@
 ## Project Structure & Module Organization
 - `R/`: package source organized by concern (`initialization.R`, `composition.R`, `config_overrides.R`, etc.).
 - `inst/tinytest/`: tinytest suites split by functionality (`test_initialize.R`, `test_compose.R`, etc.).
-- `inst/testdata/`: YAML fixtures used in tests (`basic/conf/`).
+- `inst/examples/`: YAML fixtures used in tests.
 - `man/`: generated Rd documentation (from roxygen2).
 - Root metadata and tooling: `DESCRIPTION`, `NAMESPACE`, `README.qmd`, `README.md`, `Makefile`, `CHANGES.md`.
 
@@ -23,7 +23,7 @@
 
 ## Testing Guidelines
 - Framework: `tinytest` (`tests/tinytest.R` is the package test entrypoint).
-- Name new tests `test_<feature>.R` and keep reusable fixtures in `inst/testdata/<scenario>/`.
+- Name new tests `test_<feature>.R` and keep reusable fixtures in `inst/examples/`.
 - For behavior changes, add assertions for defaults resolution, override parsing, initialization state transitions, and tree-print output.
 - Run `make test` before opening a PR; use `make testone` for focused debugging loops.
 
