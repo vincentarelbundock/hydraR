@@ -238,7 +238,17 @@ main <- function(
     }
 
     variants <- lapply(overrides, .main_override_variants)
-    combinations <- .main_cartesian_product(variants)
+
+    if (length(variants) == 0L) {
+        combinations <- list(character())
+    } else {
+        reversed <- rev(variants)
+        grid <- expand.grid(reversed, stringsAsFactors = FALSE, KEEP.OUT.ATTRS = FALSE)
+        n <- nrow(grid)
+        combinations <- lapply(seq_len(n), function(i) {
+            rev(as.character(grid[i, , drop = TRUE]))
+        })
+    }
 
     max_jobs <- getOption("hydraR.main.max_jobs", 1000L)
     if (length(combinations) > max_jobs) {
@@ -274,22 +284,6 @@ main <- function(
     }
 
     paste0(lhs, rhs_values)
-}
-
-.main_cartesian_product <- function(variants) {
-    combos <- list(character())
-    for (choices in variants) {
-        next_combos <- vector("list", length(combos) * length(choices))
-        idx <- 1L
-        for (base in combos) {
-            for (choice in choices) {
-                next_combos[[idx]] <- c(base, choice)
-                idx <- idx + 1L
-            }
-        }
-        combos <- next_combos
-    }
-    combos
 }
 
 .find_main_top_level <- function(x, target) {
